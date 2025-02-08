@@ -1,0 +1,1 @@
+# Funzioni generiche di supporto
