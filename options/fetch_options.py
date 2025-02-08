@@ -14,16 +14,29 @@ class FetchOptions:
     def fetch_expirations(self):
         """Recupera tutte le date di scadenza disponibili per il simbolo."""
         params = {"root": self.symbol}
-        response = requests.get(f"{self.base_url}/v2/list/expirations", params=params)
-        response.raise_for_status()
+        try:
+            response = requests.get(f"{self.base_url}/v2/list/expirations", params=params)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            print(f"Errore nella richiesta: {e}")
+            print(f"\tStatus Code: {response.status_code}")
+            print(f"\tResponse Text: {response.text}")
+            
         expirations = response.json().get("response", [])
         return expirations
 
     def fetch_strikes(self, expiration):
         """Recupera tutti i prezzi di esercizio disponibili per una data di scadenza specifica."""
         params = {"root": self.symbol, "exp": expiration}
-        response = requests.get(f"{self.base_url}/v2/list/strikes", params=params)
-        response.raise_for_status()
+        try: 
+            response = requests.get(f"{self.base_url}/v2/list/strikes", params=params)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            print(f"Errore nella richiesta: {e}")
+            print(f"\tStatus Code: {response.status_code}")
+            print(f"\tResponse Text: {response.text}")
+        
+        
         strikes = response.json().get("response", [])
         return strikes
 
@@ -74,9 +87,14 @@ class FetchOptions:
                             "start_date": date,
                             "end_date": date  # Scarica solo un giorno alla volta
                         }
-
-                        response = requests.get(f"{self.base_url}/v2/hist/option/eod", params=params)
-                        response.raise_for_status()
+                        
+                        try:
+                            response = requests.get(f"{self.base_url}/v2/hist/option/eod", params=params)
+                            response.raise_for_status()
+                        except requests.exceptions.RequestException as e:
+                            print(f"Errore nella richiesta: {e}")
+                            print(f"\tStatus Code: {response.status_code}")
+                            print(f"\tResponse Text: {response.text}")
 
                         data = response.json().get("response", [])
                         if data:
@@ -137,9 +155,14 @@ class FetchOptions:
                             "end_date": timestamp[:8],  # Scarica solo un giorno alla volta
                             "ivl": interval_ms
                         }
-
-                        response = requests.get(f"{self.BASE_URL}/v2/hist/option/quote", params=params)
-                        response.raise_for_status()
+                        
+                        try:
+                            response = requests.get(f"{self.BASE_URL}/v2/hist/option/quote", params=params)
+                            response.raise_for_status()
+                        except requests.exceptions.RequestException as e:
+                            print(f"Errore nella richiesta: {e}")
+                            print(f"\tStatus Code: {response.status_code}")
+                            print(f"\tResponse Text: {response.text}")
 
                         data = response.json().get("response", [])
                         if data:

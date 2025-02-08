@@ -93,6 +93,8 @@ class ThetaDataFetcher:
             return response.json().get("response", [])
         except requests.exceptions.RequestException as e:
             print(f"Errore nella richiesta: {e}")
+            print(f"\tStatus Code: {response.status_code}")
+            print(f"\tResponse Text: {response.text}")
             return None
 
     def update_data(self, selected_timeframes):
@@ -146,6 +148,8 @@ class ThetaDataFetcher:
 
         except requests.exceptions.RequestException as e:
             print(f"❌ Errore nel recupero delle date disponibili: {e}")
+            print(f"\tStatus Code: {response.status_code}")
+            print(f"\tResponse Text: {response.text}")
             raise
             
             
