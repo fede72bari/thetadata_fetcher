@@ -17,3 +17,6 @@ def get_missing_dates(self, file_path, first_date, last_date, is_intraday=False)
     existing_dates = set(pd.to_datetime(df["date"]).dt.date)
     all_dates = set(pd.date_range(first_date, last_date).date)
     return sorted(all_dates - existing_dates)
+
+
+

@@ -39,6 +39,67 @@ class FetchOptions:
         
         strikes = response.json().get("response", [])
         return strikes
+    
+    
+    def fetch_option_greeks_eod(self, start_date, end_date):
+        """Fetches daily (EOD) option Greeks."""
+        params = {
+            "root": self.symbol,
+            "start_date": start_date.strftime("%Y%m%d"),
+            "end_date": end_date.strftime("%Y%m%d")
+        }
+        response = requests.get(f"{self.base_url}/v2/bulk_hist/option/eod", params=params)
+        response.raise_for_status()
+
+        data = response.json().get("response", [])
+        return pd.DataFrame(data) if data else None
+    
+    
+    def fetch_option_greeks_intraday(self, start_date, end_date, interval_ms):
+        """Fetches intraday OHLC option Greeks."""
+        params = {
+            "root": self.symbol,
+            "start_date": start_date.strftime("%Y%m%d"),
+            "end_date": end_date.strftime("%Y%m%d"),
+            "ivl": interval_ms
+        }
+        response = requests.get(f"{self.base_url}/v2/bulk_hist/option/ohlc", params=params)
+        response.raise_for_status()
+
+        data = response.json().get("response", [])
+        return pd.DataFrame(data) if data else None
+    
+    
+    def fetch_option_open_interest_eod(self, start_date, end_date):
+        """Fetches daily (EOD) option open interest."""
+        params = {
+            "root": self.symbol,
+            "start_date": start_date.strftime("%Y%m%d"),
+            "end_date": end_date.strftime("%Y%m%d")
+        }
+        response = requests.get(f"{self.base_url}/v2/hist/option/open_interest", params=params)
+        response.raise_for_status()
+
+        data = response.json().get("response", [])
+        return pd.DataFrame(data) if data else None
+    
+    
+    def fetch_option_open_interest_intraday(self, start_date, end_date, interval_ms):
+        """Fetches intraday OHLC option open interest."""
+        params = {
+            "root": self.symbol,
+            "start_date": start_date.strftime("%Y%m%d"),
+            "end_date": end_date.strftime("%Y%m%d"),
+            "ivl": interval_ms
+        }
+        response = requests.get(f"{self.base_url}/v2/hist/option/open_interest", params=params)
+        response.raise_for_status()
+
+        data = response.json().get("response", [])
+        return pd.DataFrame(data) if data else None
+    
+    
+    
 
     def fetch_daily_option_data(self, start_date, end_date):
         """Scarica i dati EOD per le opzioni iterando su tutte le expiration e strike disponibili, evitando duplicati."""

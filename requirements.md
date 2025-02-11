@@ -18,6 +18,7 @@ The system aims to efficiently acquire, store, and process financial market data
 - **1.1.2.1.** The System shall fetch both **daily and intraday data**, supporting multiple available timeframes.
 - **1.1.2.2.** The System shall handle different time resolutions based on the selected timeframe.
 - **1.1.2.3.** The System shall ensure seamless integration of historical intraday and daily data.
+- **1.1.2.4.** The System shall distinguish missing data for intraday with full datetime granularity, ensuring precision at minute-level resolution.
 
 ## 1.2. File Naming & Storage Structure
 
@@ -26,6 +27,7 @@ The system aims to efficiently acquire, store, and process financial market data
 - **1.2.1.1.** The System shall save files using the format `{SYMBOL_TYPE_TF}`, e.g., `SPY_options_1minute`, where `TYPE` can be either `stock`, `index`, or `options`.
 - **1.2.1.2.** The System shall store options, implied volatility, open interest, and Greeks in appropriately structured files.
 - **1.2.1.3.** The System shall ensure that underlying security data (stock/index) is stored separately from option data.
+- **1.2.1.4.** The System shall store Open Interest within the same file as Greeks instead of a separate file.
 
 ### 1.2.2. Data Integration & Deduplication
 
@@ -52,6 +54,8 @@ The system aims to efficiently acquire, store, and process financial market data
 - **2.1.1.1.** The System shall fetch **option market data** while ensuring proper alignment with the **corresponding underlying asset prices**.
 - **2.1.1.2.** The System shall ensure that **Greeks, Implied Volatility, and Open Interest** are assigned to the correct option contract row in the dataset.
 - **2.1.1.3.** The System shall verify that all options data points match the correct underlying price timestamp.
+- **2.1.1.4.** The System shall support full integration of first, second, and third-order Greeks in the options dataset.
+- **2.1.1.5.** The System shall support full integration of Implied Volatility in the options dataset.
 
 ### 2.1.2. Data Storage per Security Type
 

@@ -26,3 +26,19 @@ class FetchIndex:
             print(f"Index EOD data saved to {file_path}")
         else:
             print("No index EOD data available.")
+            
+            
+    def fetch_intraday_index_data(self, start_date, end_date, interval_ms):
+        """Fetches intraday OHLC data for the index."""
+        params = {
+            "root": self.symbol,
+            "start_date": start_date.strftime("%Y%m%d"),
+            "end_date": end_date.strftime("%Y%m%d"),
+            "ivl": interval_ms
+        }
+        response = requests.get(f"{self.BASE_URL}/v2/hist/index/ohlc", params=params)
+        response.raise_for_status()
+
+        data = response.json().get("response", [])
+        return pd.DataFrame(data) if data else None
+
