@@ -10,7 +10,7 @@ class FetchIndex:
         self.index_data_dir = index_data_dir
         os.makedirs(self.index_data_dir, exist_ok=True)
 
-    def fetch_index_data(self, start_date, end_date):
+    def fetch_daily_index_data(self, start_date, end_date):
         """Scarica dati EOD per gli indici."""
         file_name = f"{self.symbol}_index_eod.parquet"
         file_path = os.path.join(self.index_data_dir, file_name)

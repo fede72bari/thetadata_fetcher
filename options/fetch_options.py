@@ -41,7 +41,7 @@ class FetchOptions:
         return strikes
     
     
-    def fetch_option_greeks_eod(self, start_date, end_date):
+    def fetch_daily_option_greeks(self, start_date, end_date):
         """Fetches daily (EOD) option Greeks."""
         params = {
             "root": self.symbol,
@@ -70,7 +70,7 @@ class FetchOptions:
         return pd.DataFrame(data) if data else None
     
     
-    def fetch_option_open_interest_eod(self, start_date, end_date):
+    def fetch_daily_option_open_interest(self, start_date, end_date):
         """Fetches daily (EOD) option open interest."""
         params = {
             "root": self.symbol,

@@ -9,8 +9,6 @@ from options.fetch_options import FetchOptions
 
 
 class ThetaDataFetcher:
-    BASE_URL = "http://127.0.0.1:25510"
-    TERMINAL_JAR_PATH = "D:\\Dropbox\\TRADING\\ThetaTerminal.jar"
 
     def __init__(self, 
                  username, 
@@ -39,6 +37,10 @@ class ThetaDataFetcher:
         os.makedirs(self.index_data_dir, exist_ok=True)
 
         self.JAVA_PATH = self.find_java_executable()
+        
+        # 🔹 **Recupera la lista degli stock e degli indici**
+        self.stock_list = self.get_stock_list()
+        self.index_list = self.get_index_list()
 
         if not self.check_terminal_connection():
             print("Theta Terminal non è attivo. Tentativo di avvio...")
@@ -63,6 +65,30 @@ class ThetaDataFetcher:
         except Exception as e:
             print(f"Errore nel trovare Java: {e}")
         raise RuntimeError("Impossibile trovare un'installazione Java 22 valida.")
+        
+        
+    def get_stock_list(self):
+        """Fetches the list of available stock symbols from ThetaData."""
+        try:
+            response = requests.get(f"{self.BASE_URL}/v2/list/roots/stock")
+            response.raise_for_status()
+            data = response.json().get("response", [])
+            return set(data) if data else set()
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error retrieving stock list: {e}")
+            return set()
+
+    def get_index_list(self):
+        """Fetches the list of available index symbols from ThetaData."""
+        try:
+            response = requests.get(f"{self.BASE_URL}/v2/list/roots/index")
+            response.raise_for_status()
+            data = response.json().get("response", [])
+            return set(data) if data else set()
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error retrieving index list: {e}")
+            return set()
+        
         
         
     def get_interval_ms(self, timeframe):
@@ -131,30 +157,31 @@ class ThetaDataFetcher:
             print(f"🔄 Updating for timeframe: {timeframe}")
             is_intraday = timeframe != "daily"
 
-            # Get all available dates or timestamps from ThetaData API
-            available_dates = self.get_available_dates(is_intraday)
+            # 🔹 **Determina se l'underlying è uno stock o un index**
+            if self.symbol in self.stock_list:
+                fetch_daily = self.fetch_daily_stock_data
+                fetch_intraday = self.fetch_intraday_stock_data
+                available_dates = self.get_available_dates(is_intraday, data_type="stock")
+            elif self.symbol in self.index_list:
+                fetch_daily = self.fetch_daily_index_data
+                fetch_intraday = self.fetch_intraday_index_data
+                available_dates = self.get_available_dates(is_intraday, data_type="index")
+            else:
+                raise ValueError(f"Symbol {self.symbol} not recognized as stock or index.")
 
-            # Define file paths
+            # 🔹 **Definizione dei file**
             option_file = os.path.join(self.options_data_dir, self.generate_file_name(self.symbol, "options", timeframe))
             greeks_file = os.path.join(self.options_data_dir, self.generate_file_name(self.symbol, "greeks", timeframe))
             underlying_file = os.path.join(self.options_data_dir, self.generate_file_name(self.symbol, "underlying", timeframe))
 
-            # Get last available date/timestamp from each file if recent_only is True
+            # 🔹 **Trova le date mancanti**
             last_dates = {}
             if recent_only:
                 last_dates["options"] = self.get_last_available_date(option_file, is_intraday)
                 last_dates["greeks"] = self.get_last_available_date(greeks_file, is_intraday)
                 last_dates["underlying"] = self.get_last_available_date(underlying_file, is_intraday)
 
-                # 🔹 **Controllo esplicito tra ultima data presente e data attuale**
-                for key, last_date in last_dates.items():
-                    if last_date:
-                        print(f"📌 Last available {key} data: {last_date} | Current date: {current_date}")
-                        if last_date >= current_date:
-                            print(f"✅ No update needed for {key}, data is up to date.")
-                            last_dates[key] = None  # Evita richieste inutili
-
-                # 🔹 **Filtra le date disponibili per mantenere solo quelle successive all'ultima data presente**
+                # 🔹 **Filtra solo le date successive all'ultima presente nel file**
                 available_dates = {d for d in available_dates if any(d > last_dates[k] for k in last_dates if last_dates[k])}
 
             else:
@@ -187,7 +214,7 @@ class ThetaDataFetcher:
 
             new_underlying = pd.DataFrame()
             if not missing_underlying.empty:
-                new_underlying = self.fetch_intraday_underlying_data(missing_underlying) if is_intraday else self.fetch_daily_underlying_data(missing_underlying)
+                new_underlying = fetch_intraday(missing_underlying) if is_intraday else fetch_daily(missing_underlying)
 
             # **Merge and save**
             if not new_options.empty:
@@ -200,26 +227,42 @@ class ThetaDataFetcher:
         print("✅ Data update complete.")
 
 
-    
 
-    def get_available_dates(self):
-        """Recupera l'intervallo di date disponibili per il simbolo selezionato."""
+
+    def get_available_dates(self, is_intraday=False, data_type="stock"):
+        """
+        Retrieves the available dates (daily) or timestamps (intraday) 
+        for the given symbol, distinguishing between stock and index.
+
+        Args:
+            is_intraday (bool): If True, retrieves intraday timestamps instead of daily dates.
+            data_type (str): Must be "stock" or "index" to determine which API endpoint to use.
+
+        Returns:
+            list: Sorted list of available dates or timestamps.
+        """
+        if data_type == "stock":
+            endpoint = "/v2/list/dates/stock/quote" if not is_intraday else "/v2/list/timestamps/stock/quote"
+        elif data_type == "index":
+            endpoint = "/v2/list/dates/index/quote" if not is_intraday else "/v2/list/timestamps/index/quote"
+        else:
+            raise ValueError(f"Invalid data_type: {data_type}. Must be 'stock' or 'index'.")
+
         try:
-            response = requests.get(f"{self.BASE_URL}/v2/list/dates/stock/quote", params={"root": self.symbol})
+            response = requests.get(f"{self.BASE_URL}{endpoint}", params={"root": self.symbol})
             response.raise_for_status()
             data = response.json()
 
             if "response" in data and isinstance(data["response"], list) and len(data["response"]) > 0:
-                dates = sorted(pd.to_datetime([str(d) for d in data["response"]], format="%Y%m%d"))
-                return dates[0], dates[-1]
+                dates = sorted(pd.to_datetime([str(d) for d in data["response"]], format="%Y%m%d" if not is_intraday else "%Y%m%d%H%M"))
+                return dates
             else:
-                raise ValueError("❌ Nessuna data disponibile nella risposta dell'API.")
+                raise ValueError(f"❌ No available dates returned by API for {self.symbol}.")
 
         except requests.exceptions.RequestException as e:
-            print(f"❌ Errore nel recupero delle date disponibili: {e}")
-            print(f"\tStatus Code: {response.status_code}")
-            print(f"\tResponse Text: {response.text}")
+            print(f"❌ Error retrieving available dates: {e}")
             raise
+
             
             
     def generate_file_name(self, symbol, data_type, timeframe):

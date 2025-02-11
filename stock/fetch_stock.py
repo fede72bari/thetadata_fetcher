@@ -10,7 +10,7 @@ class FetchStock:
         self.stock_data_dir = stock_data_dir
         os.makedirs(self.stock_data_dir, exist_ok=True)
 
-    def fetch_stock_data_eod(self, start_date, end_date):
+    def fetch_daily_stock_data(self, start_date, end_date):
         """Fetches daily (EOD) stock data."""
         params = {
             "root": self.symbol,
@@ -24,7 +24,7 @@ class FetchStock:
         return pd.DataFrame(data) if data else None
     
 
-    def fetch_stock_data_intraday(self, start_date, end_date, interval_ms):
+    def fetch_intraday_stock_data(self, start_date, end_date, interval_ms):
         """Fetches intraday OHLC stock data."""
         params = {
             "root": self.symbol,
